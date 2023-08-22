@@ -27,6 +27,13 @@
       "destination": "/usr/local/src/pwnagotchi/"
     },
     {
+      "type": "file",
+      "sources": [
+        "../installs/go1.21.0.linux-amd64.tar.gz"
+      ],
+      "destination": "/tmp/"
+    },
+    {
       "type": "shell",
       "inline": [
         "apt-get -y --allow-releaseinfo-change update",
