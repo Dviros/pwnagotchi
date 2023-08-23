@@ -33,6 +33,13 @@
       ],
       "destination": "/tmp/"
     },
+{
+      "type": "file",
+      "sources": [
+        "../installs/bettercap"
+      ],
+      "destination": "/tmp/"
+    },
     {
       "type": "shell",
       "inline": [
