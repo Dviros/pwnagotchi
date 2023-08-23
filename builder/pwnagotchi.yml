@@ -316,23 +316,29 @@
       insertafter: EOF
     when: golang.changed
 
-  - name: Install bettercap v2.32
+  - name: download bettercap
     shell: |
       export GOPATH=$HOME/go
       export PATH=/usr/local/go/bin:$PATH:$GOPATH/bin
-      go env -w GO111MODULE=off
-      go install -v github.com/bettercap/bettercap@latest
-      cd $GOPATH/bin
-      cp bettercap /usr/bin/
-      cp bettercap /usr/local/bin/
+#      go install github.com/bettercap/bettercap@latest
     args:
       executable: /bin/bash
     register: bettercap
     when: golang.changed
 
-  - name: Link bettercap v2.32
-    command: ln -s /usr/local/bin/bettercap /usr/bin/bettercap 
-    when: bettercap.changed
+  - name: Install bettercap v2.32
+    shell: |
+      #cd $GOPATH/bin
+      cp /tmp/bettercap /usr/bin/
+      cp /tmp/bettercap /usr/local/bin/
+    args:
+      executable: /bin/bash
+    register: bettercap
+    when: golang.changed
+
+#  - name: Link bettercap v2.32
+#    command: ln -s /usr/local/bin/bettercap /usr/bin/bettercap 
+#    when: bettercap.changed
 
   - name: clone bettercap caplets
     git:
