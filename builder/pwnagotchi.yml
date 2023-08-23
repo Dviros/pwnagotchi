@@ -57,6 +57,16 @@
           # Remove every golang package because we will install go-1.20.2
           - golang*
         install:
+          - libcurl4-openssl-dev
+          - libpcap-dev
+          - libnetfilter-queue-dev
+          - libusb-dev 
+          - libudev-dev
+          - libusb-1.0-0-dev
+          - libnl-3-dev
+          - pkg-config
+          - libssl-dev
+          - zlib1g-dev
           - rsync
           - vim
           - screen
@@ -175,6 +185,29 @@
       dest: /usr/local/src/gratis
     register: gratisgit
 
+  - name: clone hcxtools repository
+    git:
+      repo: https://salsa.debian.org/pkg-security-team/hcxtools.git
+      dest: /opt/hcxtools
+    register: hcxtools
+
+  - name: clone hcxdumptool repository
+    git:
+      repo: https://github.com/ZerBea/hcxdumptool.git
+      dest: /opt/hcxdumptool
+    register: hcxdumptool
+
+  - name: compile hcx tools
+    shell: |
+      cd /opt/hcxtools
+      make install
+      cd /opt/hcxdumptool
+      make install
+    args:
+      executable: /bin/bash
+    register: compilehcx
+    when: hcxdumptool.changed
+
   - name: build papirus service
     make:
       chdir: /usr/local/src/gratis
@@ -269,7 +302,6 @@
   - name: Install go-1.21.0
     unarchive:
       src: /tmp/go1.21.0.linux-amd64.tar.gz
-     #src: http://172.21.137.135:8080/go1.21.0.linux-amd64.tar.gz
       dest: /usr/local
       remote_src: yes
     register: golang
@@ -289,10 +321,10 @@
       export GOPATH=$HOME/go
       export PATH=/usr/local/go/bin:$PATH:$GOPATH/bin
       go env -w GO111MODULE=off
-      go install github.com/bettercap/bettercap@latest
-      cd $GOPATH/src/github.com/bettercap/bettercap
-      make build
-      make install
+      go install -v github.com/bettercap/bettercap@latest
+      cd $GOPATH/bin
+      cp bettercap /usr/bin/
+      cp bettercap /usr/local/bin/
     args:
       executable: /bin/bash
     register: bettercap
