@@ -26,15 +26,7 @@ ifneq (,$(UNSHARE))
 UNSHARE := $(UNSHARE) --uts
 endif
 
-# Directories
-BUILDER_DIR := builder
-
-# Tools
-PACKER := $(BUILDER_DIR)/packer
-
-.PHONY: all clean install image
-
-all: image
+all: clean install image
 
 langs:
 	@for lang in pwnagotchi/locale/*/; do\
@@ -42,6 +34,7 @@ langs:
 		./scripts/language.sh compile $$(basename $$lang); \
 	done
 
+PACKER := /tmp/pwnagotchi/packer
 PACKER_URL := https://releases.hashicorp.com/packer/$(PACKER_VERSION)/packer_$(PACKER_VERSION)_linux_$(GOARCH).zip
 $(PACKER):
 	mkdir -p $(@D)
@@ -54,17 +47,21 @@ SDIST := dist/pwnagotchi-$(PWN_VERSION).tar.gz
 $(SDIST): setup.py pwnagotchi
 	python3 setup.py sdist
 
+# Building the image requires packer, but don't rebuild the image just because packer updated.
 $(PWN_RELEASE).img: | $(PACKER)
 
-$(PWN_RELEASE).img: $(SDIST) $(BUILDER_DIR)/pwnagotchi.json $(BUILDER_DIR)/pwnagotchi.yml $(shell find $(BUILDER_DIR)/data -type f)
+# If the packer or ansible files are updated, rebuild the image.
+$(PWN_RELEASE).img: $(SDIST) builder/pwnagotchi.json builder/pwnagotchi.yml $(shell find builder/data -type f)
 	sudo $(PACKER) plugins install github.com/solo-io/arm-image
-	cd $(BUILDER_DIR) && sudo $(UNSHARE) $(PACKER) build -var "pwn_hostname=$(PWN_HOSTNAME)" -var "pwn_version=$(PWN_VERSION)" pwnagotchi.json
-	sudo chown -R $$USER:$$USER $(BUILDER_DIR)/output-pwnagotchi
-	mv $(BUILDER_DIR)/output-pwnagotchi/image $@
+	cd builder && sudo $(UNSHARE) $(PACKER) build -var "pwn_hostname=$(PWN_HOSTNAME)" -var "pwn_version=$(PWN_VERSION)" pwnagotchi.json
+	sudo chown -R $$USER:$$USER builder/output-pwnagotchi
+	mv builder/output-pwnagotchi/image $@
 
+# If any of these files are updated, rebuild the checksums.
 $(PWN_RELEASE).sha256: $(PWN_RELEASE).img
 	sha256sum $^ > $@
 
+# If any of the input files are updated, rebuild the archive.
 $(PWN_RELEASE).zip: $(PWN_RELEASE).img $(PWN_RELEASE).sha256
 	zip $(PWN_RELEASE).zip $^
 
@@ -76,4 +73,5 @@ clean:
 	- rm -rf dist pwnagotchi.egg-info
 	- rm -f $(PACKER)
 	- rm -f $(PWN_RELEASE).*
-	- sudo rm -rf $(BUILDER_DIR)/output-pwnagotchi $(BUILDER_DIR)/packer_cache
+	- sudo rm -rf builder/output-pwnagotchi builder/packer_cache
+
